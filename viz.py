@@ -11,6 +11,7 @@ from model import *
 import venture.shortcuts as s
 ripl = s.make_puma_church_prime_ripl()
 
+# cell -> region
 cell_map = [
     0, 0, 0, 1, 2, 2, 2, 2, 3, 3,
     0, 0, 0, 1, 2, 2, 2, 2, 3, 3,
@@ -23,6 +24,7 @@ cell_map = [
     4, 5, 6, 6, 7, 7, 8, 9, 9, 9,
     5, 6, 6, 6, 7, 7, 8, 9, 9, 9,
 ]
+# state -> region
 regions = {
     'Mississippi': 0,
     'Alabama': 0,
@@ -51,6 +53,8 @@ regions = {
     'New Hampshire': 9,
     'Maine': 9
 }
+# where to draw the arrows
+# (region, region) -> (lon, lat, angle)
 vectors = {
     (0, 1): (-87, 35, 60),
     (0, 2): (-87, 36, 90),
@@ -121,7 +125,9 @@ def plot_map(values, vmin, vmax, flows):
     return m
 
 def get_data():
+    # read observations
     observations = readObservations('release/10x10x1000-train-observations.csv')
+    # read reconstructed bird moves
     bird_moves = readReconstruction(2)
     meta_observations = Counter()
     for y, yobs in observations.iteritems():
