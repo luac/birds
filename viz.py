@@ -155,7 +155,7 @@ def get_data():
 
 if __name__ == '__main__':
     data = get_data()
-    for y in xrange(10):
+    for y in xrange(3):
         for d in xrange(19):
             print 'Year {0} Day {1}'.format(y, d)
             plot_map(*data(y, d))
