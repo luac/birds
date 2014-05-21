@@ -1,6 +1,7 @@
 import venture.shortcuts as s
 from utils import *
 from venture.unit import VentureUnit
+from venture.ripl.ripl import _strip_types
 
 num_features = 4
 
@@ -131,6 +132,8 @@ class Continuous(VentureUnit):
     self.years = range(params['Y'])
     self.days = range(params['D'])
     self.hypers = params["hypers"]
+    self.ground = readReconstruction(self.dataset)
+
     super(Continuous, self).__init__(ripl, params)
 
   def loadAssumes(self, ripl = None):
@@ -172,36 +175,36 @@ class Continuous(VentureUnit):
 
     ripl.assume('clamp_min', '(lambda (min x) (biplex (< x min) min x))')
 
-    ripl.assume('approx_binomial', """
-      (lambda (n p)
-        (clamp_min 0
-          (normal (* p n) (sqrt (* n (- p (* p p)))))))""")
+    #ripl.assume('approx_binomial', """
+    #  (lambda (n p)
+    #    (clamp_min 0
+     #     (normal (* p n) (sqrt (* n (- p (* p p)))))))""")
 
     ripl.assume('multinomial_func', """
       (lambda (n min max f)
         (let ((normalize (foldl + 0 min max f)))
           (mem (lambda (i)
-            (approx_binomial n (/ (f i) normalize))))))""")    
+            (poisson (* n (/ (f i) normalize)))))))""")
 
     ripl.assume('count_birds', """
       (mem (lambda (y d i)
         (if (= d 0)
-          (if (= i 0) total_birds 0)""" +
-          tree('+', '(do_in_scope_1 y (- d 1) (bird_movements y (- d 1) _j) i)', '_j', 0, self.cells) + ')))')
+          (if (= i 0) total_birds 0)
+          (let ((moves (bird_movements y (- d 1))))
+            (scope_include y (- d 1)""" +
+              fold('+', '((lookup moves _j) i)', '_j', self.cells) + ')))))')
     
-    ripl.assume('bird_movements', """
+    ripl.assume('bird_movements_loc', """
       (mem (lambda (y d i)
         (multinomial_func (count_birds y d i) 0 cells (get_bird_move_dist y d i))))""")
     
-    ripl.assume('do_in_scope_1', """
-      (lambda (scope block f arg1)
-        (scope_include scope block (f arg1)))""")
+    ripl.assume('bird_movements', '(mem (lambda (y d) %s))' % fold('array', '(bird_movements_loc y d _i_)', '_i_', self.cells))
     
     ripl.assume('observe_birds', '(mem (lambda (y d i) (poisson (+ (count_birds y d i) 0.0001))))')
     
     ripl.assume('get_birds_moving', """
       (lambda (y d i j)
-        ((bird_movements y d i) j))""")
+        ((bird_movements_loc y d i) j))""")
     
     #ripl.assume('get_birds_moving1', '(lambda (y d i) %s)' % fold('array', '(get_birds_moving y d i _j)', '_j', cells))
     #ripl.assume('get_birds_moving2', '(lambda (y d) %s)' % fold('array', '(get_birds_moving1 y d _i)', '_i', cells))
@@ -226,4 +229,28 @@ class Continuous(VentureUnit):
   
   def makeObserves(self):
     self.loadObserves(ripl=self)
+  
+  def getBirdMoves(self):
+  #print "Sampling bird movements"
+  
+  #return ripl.sample('(get_birds_moving4)')
+    bird_moves = {}
+    
+    for y in self.years:
+      for d in self.days[:-1]:
+        for i in range(self.cells):
+          for j in range(self.cells):
+            bird_moves[(y, d, i, j)] = _strip_types(self.ripl.sivm.sample(['get_birds_moving'] + map(s.number, [y, d, i, j]))['value'])
+    
+    return bird_moves
+  
+  def computeScore(self):
+    infer_bird_moves = self.getBirdMoves()
+
+    score = 0
+    
+    for key in infer_bird_moves:
+      score += (infer_bird_moves[key] - self.ground[key]) ** 2
+
+    return score
 
