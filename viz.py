@@ -59,7 +59,7 @@ def plot_map(values, vmin, vmax, flows):
     m.drawparallels(np.arange(0, 90, 10), labels=[1,0,0,0])
     m.drawmeridians(np.arange(180, 360, 10), labels=[0,0,0,1])
     m.readshapefile('states/states', 'states', drawbounds=True)
-    cmap = plt.cm.gray
+    cmap = plt.cm.hot
     for seg, shapedict in zip(m.states, m.states_info):
         statename = shapedict['STATE_NAME']
         if statename not in regions: continue
@@ -81,5 +81,5 @@ def plot_map(values, vmin, vmax, flows):
     u = np.cos(angles*np.pi/180) * np.log1p(np.abs(nums_birds)) * np.sign(nums_birds)
     v = np.sin(angles*np.pi/180) * np.log1p(np.abs(nums_birds)) * np.sign(nums_birds)
     m.quiver(lons, lats, u, v, latlon=True,
-             pivot='middle', zorder=2, color='#770000')
+             pivot='middle', zorder=2, color='#3333ff')
     plt.show()
