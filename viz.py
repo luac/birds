@@ -82,6 +82,7 @@ vectors = {
     (7, 8): (-78, 40, 60),
     (3, 8): (-81, 43, -30),
     (3, 9): (-79, 44, 0),
+    (7, 9): (-74, 41, 60),
     (8, 9): (-73, 43, 30),
 }
 
@@ -151,3 +152,14 @@ def get_data():
                  for i in xrange(10) for j in xrange(10)]
         return (obs, 0, 1000, flows)
     return data
+
+if __name__ == '__main__':
+    data = get_data()
+    for y in xrange(10):
+        for d in xrange(19):
+            print 'Year {0} Day {1}'.format(y, d)
+            plot_map(*data(y, d))
+            plt.title('Bird Observations and Movements: Year {0} Day {1}'.format(y, d))
+            fig = plt.gcf()
+            fig.savefig('viz/{0}-{1}.png'.format(y, d))
+            fig.clear()
